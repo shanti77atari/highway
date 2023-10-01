@@ -1,0 +1,513 @@
+mads 2.0.4 build 13 (8 May 16)
+Source: title2.asm
+     1 						icl	'atari.hea'
+Source: atari.hea
+     1
+     2 				.enum	@dmactl
+     3 = 0000				blank	= %00
+     4 = 0001				narrow	= %01
+     5 = 0002				standard= %10
+     6 = 0003				wide	= %11
+     7 = 0004				missiles= %100
+     8 = 0008				players	= %1000
+     9 = 0010				lineX1	= %10000
+    10 = 0000				lineX2	= %00000
+    11 = 0020				dma	= %100000
+    12 				.ende
+    13
+    14 = 003F			scr48	= @dmactl(wide|dma|players|missiles|lineX1)		;screen 48b
+    15 = 003E			scr40	= @dmactl(standard|dma|players|missiles|lineX1)		;screen 40b
+    16 = 003D			scr32	= @dmactl(narrow|dma|players|missiles|lineX1)		;screen 32b
+    17
+    18 				.enum	@pmcntl
+    19 = 0001				missiles= %1
+    20 = 0002				players	= %10
+    21 = 0004				trigs	= %100
+    22 				.ende
+    23
+    24 				.enum	@gtictl
+    25 = 0000				prior0	= %0
+    26 = 0001				prior1	= %1
+    27 = 0002				prior2	= %10
+    28 = 0004				prior4	= %100
+    29 = 0008				prior8	= %1000
+    30 = 0010				ply5	= %10000	; Fifth Player Enable
+    31 = 0020				mlc	= %100000	; Multiple Color Player Enable
+    32 = 0040				mode9	= %01000000
+    33 = 0080				mode10	= %10000000
+    34 = 00C0				mode11	= %11000000
+    35 				.ende
+    36
+    37
+    38 				* ---------------------------------------------------------------------------------------------
+    39 				* ---	OS
+    40 				* ---------------------------------------------------------------------------------------------
+    41
+    42 = 0052			lmargin	= $52
+    43 = 0053			rmargin	= $53
+    44 = 0054			rowcrs	= $54
+    45 = 0055			colcrs	= $55
+    46
+    47 				* ---------------------------------------------------------------------------------------------
+    48 				* ---	KEY ($d209)
+    49 				* ---------------------------------------------------------------------------------------------
+    50 = 001C			key_esc		= 28
+    51 = 0021			key_space	= 33
+    52 = 0010			key_v		= 16
+    53 = 0015			key_b		= 21
+    54 = 0023			key_n		= 35
+    55 = 0025			key_m		= 37
+    56
+    57 				* ---------------------------------------------------------------------------------------------
+    58 				* ---	GTIA
+    59 				* ---------------------------------------------------------------------------------------------
+    60 = D000			hposp0	=	$D000		; pozioma pozycja gracza 0 (Z)
+    61 = D001			hposp1	=	$D001		; pozioma pozycja gracza 1 (Z)
+    62 = D002			hposp2	=	$D002		; pozioma pozycja gracza 2 (Z)
+    63 = D003			hposp3	=	$D003		; pozioma pozycja gracza 3 (Z)
+    64 = D004			hposm0	=	$D004		; pozioma pozycja pocisku 0 (Z)
+    65 = D005			hposm1	=	$D005		; pozioma pozycja pocisku 1 (Z)
+    66 = D006			hposm2	=	$D006		; pozioma pozycja pocisku 2 (Z)
+    67 = D007			hposm3	=	$D007		; pozioma pozycja pocisku 3 (Z)
+    68 = D008			sizep0	=	$D008		; poziomy rozmiar gracza 0 (Z)
+    69 = D009			sizep1	=	$D009		; poziomy rozmiar gracza 1 (Z)
+    70 = D00A			sizep2	=	$D00A		; poziomy rozmiar gracza 2 (Z)
+    71 = D00B			sizep3	=	$D00B		; poziomy rozmiar gracza 3 (Z)
+    72 = D00C			sizem	=	$D00C		; poziomy rozmiar pocisków (Z)
+    73 = D00D			grafp0	=	$D00D		; rejestr grafiki gracza 0 (Z)
+    74 = D00E			grafp1	=	$D00E		; rejestr grafiki gracza 1 (Z)
+    75 = D00F			grafp2	=	$D00F		; rejestr grafiki gracza 2 (Z)
+    76 = D010			grafp3	=	$D010		; rejestr grafiki gracza 3 (Z)
+    77 = D011			grafm	=	$D011		; rejestr grafiki pocisków (Z)
+    78 = D012			colpm0	=	$D012		; rejestr koloru gracza i pocisku 0 (Z)
+    79 = D013			colpm1	=	$D013		; rejestr koloru gracza i pocisku 1 (Z)
+    80 = D014			colpm2	=	$D014		; rejestr koloru gracza i pocisku 2 (Z)
+    81 = D015			colpm3	=	$D015		; rejestr koloru gracza i pocisku 3 (Z)
+    82 = D016			colpf0	=	$D016		; rejestr koloru pola gry 0 (Z)
+    83 = D017			colpf1	=	$D017		; rejestr koloru pola gry 1 (Z)
+    84 = D018			colpf2	=	$D018		; rejestr koloru pola gry 2 (Z)
+    85 = D019			colpf3	=	$D019		; rejestr koloru pola gry 3 (Z)
+    86 = D01A			colbak	=	$D01A		; rejestr koloru t³a (Z)
+    87
+    88 = D016			color0	=	colpf0
+    89 = D017			color1	=	colpf1
+    90 = D018			color2	=	colpf2
+    91 = D019			color3	=	colpf3
+    92
+    93 = D000			kolm0pf	=	$D000		; kolizja pocisku 0 z polem gry (O)
+    94 = D001			kolm1pf	=	$D001		; kolizja pocisku 1 z polem gry (O)
+    95 = D002			kolm2pf	=	$D002		; kolizja pocisku 2 z polem gry (O)
+    96 = D003			kolm3pf	=	$D003		; kolizja pocisku 3 z polem gry (O)
+    97 = D004			kolp0pf	=	$D004		; kolizja gracza 0 z polem gry (O)
+    98 = D005			kolp1pf	=	$D005		; kolizja gracza 1 z polem gry (O)
+    99 = D006			kolp2pf	=	$D006		; kolizja gracza 2 z polem gry (O)
+   100 = D007			kolp3pf	=	$D007		; kolizja gracza 3 z polem gry (O)
+   101 = D008			kolm0p	=	$D008		; kolizja pocisku 0 z graczem (O)
+   102 = D009			kolm1p	=	$D009		; kolizja pocisku 1 z graczem (O)
+   103 = D00A			kolm2p	=	$D00A		; kolizja pocisku 2 z graczem (O)
+   104 = D00B			kolm3p	=	$D00B		; kolizja pocisku 3 z graczem (O)
+   105 = D00C			kolp0p	=	$D00C		; kolizja gracza 0 z innym graczem (O)
+   106 = D00D			kolp1p	=	$D00D		; kolizja gracza 1 z innym graczem (O)
+   107 = D00E			kolp2p	=	$D00E		; kolizja gracza 2 z innym graczem (O)
+   108 = D00F			kolp3p	=	$D00F		; kolizja gracza 3 z innym graczem (O)
+   109 = D010			trig0	=	$D010		; stan przycisku joysticka 0 (O)
+   110 = D011			trig1	=	$D011		; stan przycisku joysticka 1 (O)
+   111 = D013			trig3	=	$D013		; znacznik do³¹czenia cartridge-a (O)
+   112 = D014			pal	=	$D014		; znacznik systemu TV (O)
+   113
+   114 = D01B			gtictl	=	$D01B		; rejestr kontroli uk³adu GTIA
+   115 = D01B			gtiactl	=	gtictl
+   116
+   117 = D01C			vdelay	=	$D01C		; licznik opóŸnienia pionowego P/MG
+   118 = D01D			pmcntl	=	$D01D		; rejestr kontroli graczy i pocisków
+   119 = D01E			hitclr	=	$D01E		; rejestr kasowania rejestrów kolizji
+   120 = D01F			consol	=	$D01F		; rejestr stanu klawiszy konsoli
+   121
+   122 				* ---------------------------------------------------------------------------------------------
+   123 				* ---	POKEY
+   124 				* ---------------------------------------------------------------------------------------------
+   125
+   126 = 0010			irqens	=	$0010		; rejestr-cieñ IRQEN
+   127 = 0011			irqstat	=	$0011		; rejestr-cieñ IRQST
+   128
+   129 = D200			audf1	=	$d200		; czêstotliwoœæ pracy generatora 1 (Z)
+   130 = D201			audc1	=	$d201		; rejestr kontroli dŸwiêku generatora 1 (Z)
+   131 = D202			audf2	=	$d202		; czêstotliwoœæ pracy generatora 2 (Z)
+   132 = D203			audc2	=	$d203		; rejestr kontroli dŸwiêku generatora 2 (Z)
+   133 = D204			audf3	=	$d204		; czêstotliwoœæ pracy generatora 3 (Z)
+   134 = D205			audc3	=	$d205		; rejestr kontroli dŸwiêku generatora 3 (Z)
+   135 = D206			audf4	=	$d206		; czêstotliwoœæ pracy generatora 4 (Z)
+   136 = D207			audc4	=	$d207		; rejestr kontroli dŸwiêku generatora 4 (Z)
+   137
+   138 = D208			audctl	=	$D208		; rejestr kontroli generatorów dŸwiêku (Z)
+   139 = D209			stimer	=	$D209		; rejestr zerowania liczników (Z)
+   140 = D209			kbcode	=	$D209		; kod ostatnio naciœniêtego klawisza (O)
+   141 = D20A			skstres	=	$D20A		; rejestr statusu z³¹cza szeregowego (Z)
+   142 = D20A			random	=	$D20A		; rejestr liczby losowej (O)
+   143 = D20D			serout	=	$D20D		; szeregowy rejestr wyjœciowy (Z)
+   144 = D20D			serin	=	$D20D		; szeregowy rejestr wejœciowy (O)
+   145 = D20E			irqen	=	$D20E		; zezwolenie przerwañ IRQ (Z)
+   146 = D20E			irqst	=	$D20E		; status przerwañ IRQ (O)
+   147 = D20F			skctl	=	$D20F		; rejestr kontroli z³¹cza szeregowego (Z)
+   148 = D20F			skstat	=	$D20F		; rejestr statusu z³¹cza szeregowego (O)
+   149
+   150 				* ---------------------------------------------------------------------------------------------
+   151 				* ---	PIA
+   152 				* ---------------------------------------------------------------------------------------------
+   153 = D300			porta	=	$D300		; port A uk³adu PIA
+   154 = D301			portb	=	$D301		; port B uk³adu PIA
+   155 = D302			pactl	=	$D302		; rejestr kontroli portu A
+   156 = D303			pbctl	=	$D303		; rejestr kontroli portu B
+   157
+   158 				* ---------------------------------------------------------------------------------------------
+   159 				* ---	ANTIC
+   160 				* ---------------------------------------------------------------------------------------------
+   161 = D400			dmactl	=	$D400		; rejestr kontroli dostêpu do pamiêci
+   162 = D401			chrctl	=	$D401		; rejestr kontroli wyœwietlania znaków
+   163 = D402			dlptr	=	$D402		; adres programu ANTIC-a
+   164 = D404			hscrol	=	$D404		; znacznik poziomego przesuwu obrazu
+   165 = D405			vscrol	=	$D405		; znacznik pionowego przesuwu obrazu
+   166 = D407			pmbase	=	$D407		; adres pamiêci graczy i pocisków
+   167 = D409			chbase	=	$D409		; adres zestawu znaków
+   168 = D40A			wsync	=	$D40A		; znacznik oczekiwania na synchronizacjê poziom¹
+   169 = D40B			vcount	=	$D40B		; licznik linii obrazu
+   170 = D40C			lpenh	=	$D40C		; poziome po³o¿enie pióra œwietlengo
+   171 = D40D			lpenv	=	$D40D		; pionowe po³o¿enie pióra œwietlnego
+   172 = D40E			nmien	=	$D40E		; rejestr zezwoleñ na przerwania NMI
+   173 = D40F			nmist	=	$D40F		; rejestr statusu przerwañ NMI
+   174
+   175 				* ---------------------------------------------------------------------------------------------
+   176 				* ---	OS
+   177 				* ---------------------------------------------------------------------------------------------
+   178
+   179 = 02C4			colpf0s	=	$02C4		; rejestr-cieñ COLPF0
+   180 = 02C5			colpf1s	=	$02C5		; rejestr-cieñ COLPF1
+   181 = 02C6			colpf2s	=	$02C6		; rejestr-cieñ COLPF2
+   182 = 02C7			colpf3s	=	$02C7		; rejestr-cieñ COLPF3
+   183 = 02C8			colbaks	=	$02C8		; rejestr-cieñ COLBAK
+   184
+   185 				* ---------------------------------------------------------------------------------------------
+   186 				* ---	HARDWARE
+   187 				* ---------------------------------------------------------------------------------------------
+   188
+   189 = FFFA			nmivec	=	$FFFA		; wektor przerwania NMI
+   190 = FFFC			resetvec=	$FFFC		; wektor przerwania RESET
+   191 = FFFE			irqvec	=	$FFFE		; wektor przerwania IRQ
+     2
+     3 = 02F4			CHBAS	equ $02F4		
+     4 = 00CB			pom0	equ 203
+     5 = 00CD			pom1	equ 205		
+     6 						
+     7 = 2000			sprites1 equ $2000		
+     8 = 2C00			ekran	equ sprites1+$c00
+     9 = 2800			znaki 	equ sprites1+$800
+    10 						
+    11 						org $4000
+    12 FFFF> 4000-577F> 54 55 + 		ins 'title2.dat'
+    13 						
+    14 5780					org $2000
+    15 = 2000			dlist	equ *
+    16 2000-20BF> 70 70 70			dta $70,$70,$70
+    17 2003 4E 00 2C				dta $4e,a(sprites1+$C00)
+    18 2006 0E 0E 0E 0E 0E 0E + 		:31 dta $0e
+    19 2025 4E 00 30				dta $4e,a(sprites1+$1000)
+    20 2028 0E 0E 0E 0E 0E 0E + 		:35 dta $0e
+    21 204B 04 04 04 04				:4 dta $04
+    22 204F 0E 0E 0E 0E 0E 0E + 		:88 dta $0e
+    23 20A7 41 00 20				dta $41,a(dlist)
+    24 						
+    25 20AA A9 00		init1	lda #0
+    26 20AC AA					tax
+    27 = 20AD			@		equ *		
+    28 						.rept 5,#
+    29 						STA SPRITES1+$300+$100*:1,X
+    30 						.ENDR
+    30 						.endr
+Source: REPT
+    29 20AD 9D 00 23				STA SPRITES1+$300+$100*0,X
+    29 20B0 9D 00 24				STA SPRITES1+$300+$100*1,X
+    29 20B3 9D 00 25				STA SPRITES1+$300+$100*2,X
+    29 20B6 9D 00 26				STA SPRITES1+$300+$100*3,X
+    29 20B9 9D 00 27				STA SPRITES1+$300+$100*4,X
+Source: title2.asm
+    31 20BC CA					dex
+    32 20BD D0 EE				bne @-
+    33 20BF 60					rts
+    34 						
+    35 02E2-02E3> AA 20				ini init1
+    36 						
+    37 20C0-20DE> 00 20 40 60 + YTAB	:8 dta #*$20
+    38 20C8 08 09 0A 0B 0C 0D	tabNeg	dta 8,9,10,11,12,13
+    39 20CE 28 29 2A 2B 2C 2D			dta 40,41,42,43,44,45
+    40 20D4 48 49 4A 4B 4C 4D			dta 72,73,74,75,76,77
+    41 20DA 68 69 6A 6B 6C			dta 104,105,106,107,108	;,109
+    42 						
+    43 20DF					org sprites1+$300+$18
+    44 2318			missiles
+    45 2318-2817> 00 00 00 00 + 	.he 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+    46 2328 00 00 00 00 00 00 + 	.he 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+    47 2338 00 00 00 00 00 00 + 	.he 00 00 00 00 00 00 00 00 00 00 03 03 03 03 03 03
+    48 2348 03 03 03 03 03 03 + 	.he 03 03 03 03 03 03 03 03 03 03 03 03 03 03 03 03
+    49 2358 03 03 03 03 03 03 + 	.he 03 03 03 03 03 03 03 03 03 03 03 03 03 03 03 03
+    50 2368 03 03 03 03 03 03 + 	.he 03 03 03 03 03 03 03 03 03 03 03 03 03 03 03 03
+    51 2378 03 03 03 03 03 03 + 	.he 03 03 03 03 03 03 03 00 00 00 00 00 00 00 00 00
+    52 2388 00 00 0C 0C 0C 0C + 	.he 00 00 0C 0C 0C 0C 0C 08 0C 0C 0C 0C 0C 0C 0C 0C
+    53 2398 0C 0C 0C 0C 0C 0C + 	.he 0C 0C 0C 0C 0C 0C 0C 0C 08 0C 08 08 0C 08 0C 0C
+    54 23A8 0C 0C 0C 0C 0C 04 + 	.he 0C 0C 0C 0C 0C 04 0C 04 00 00 00 C0 C0 C0 C0 C0
+    55 23B8 C0 C0 C0 80 C0 00 + 	.he C0 C0 C0 80 C0 00 00 00 00 00 00 00 00 00 00 00
+    56 23C8 00 00 00 00 00 00 + 	.he 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+    57 23D8 00 00 00 00 00 00 + 	.he 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+    58 23E8 00 00 00 00 00 00 + 	.he 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+    59 23F8 00 00 00 00 00 00 + 	.he 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+    60 2408 00 00 00 00 00 00 + 	.he 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+    61 2418			player0
+    62 2418 00 00 00 00 00 00 + 	.he 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+    63 2428 00 00 00 00 00 00 + 	.he 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+    64 2438 00 00 00 00 00 00 + 	.he 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+    65 2448 00 FF FF FF FF FF + 	.he 00 FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    66 2458 FF FF FF FF FF FF + 	.he FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF 7F
+    67 2468 7F 7F 7F 7F 7F FF + 	.he 7F 7F 7F 7F 7F FF FF FF FF FF FF FF FF FF FF FF
+    68 2478 FF FF FF FF FF FF + 	.he FF FF FF FF FF FF FF FF FF FE FF FF FF FF FF FF
+    69 2488 FF FF FF FF FF FE + 	.he FF FF FF FF FF FE FE FE FF FF FF FF FF FF 00 00
+    70 2498 00 00 00 00 00 00 + 	.he 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+    71 24A8 00 00 00 00 00 00 + 	.he 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+    72 24B8 00 00 00 00 00 00 + 	.he 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+    73 24C8 00 00 00 00 00 00 + 	.he 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+    74 24D8 00 00 00 00 00 00 + 	.he 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+    75 24E8 00 00 00 00 00 00 + 	.he 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+    76 24F8 00 00 00 00 00 00 + 	.he 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+    77 2508 00 00 00 00 00 00 + 	.he 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+    78 2518			player1
+    79 2518 00 00 00 00 00 00 + 	.he 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+    80 2528 00 00 00 00 00 00 + 	.he 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+    81 2538 00 00 00 00 00 00 + 	.he 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+    82 2548 00 00 00 00 00 00 + 	.he 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+    83 2558 00 00 00 00 00 00 + 	.he 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+    84 2568 00 00 00 00 00 00 + 	.he 00 00 00 00 00 00 00 00 00 FF FF BF BF FF FF FF
+    85 2578 FF FF 3F FF FF FF + 	.he FF FF 3F FF FF FF FF FF FF FF FF FF FF FE FE FE
+    86 2588 FF FF FF FF FF FF + 	.he FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    87 2598 FF FF FF FF FF FF + 	.he FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    88 25A8 FF FF FF FF FF FF + 	.he FF FF FF FF FF FF FF FF FF FF FF FF FF FF DF DF
+    89 25B8 9F 3F FF DF 00 00 + 	.he 9F 3F FF DF 00 00 00 00 00 00 00 00 00 00 00 00
+    90 25C8 00 00 00 00 00 00 + 	.he 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+    91 25D8 00 00 00 00 00 00 + 	.he 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+    92 25E8 00 00 00 00 00 00 + 	.he 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+    93 25F8 00 00 00 00 00 00 + 	.he 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+    94 2608 00 00 00 00 00 00 + 	.he 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+    95 2618			player2
+    96 2618 00 00 00 00 00 00 + 	.he 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+    97 2628 00 00 00 00 00 00 + 	.he 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+    98 2638 00 00 00 00 00 00 + 	.he 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+    99 2648 FD FF FF FF FF FF + 	.he FD FF FF FF FF FF FF FF 7F 3F BF DF CF EF FF FF
+   100 2658 FF FF FF FF FF FF + 	.he FF FF FF FF FF FF FF FF FF F7 9F 7F FF FF FF FE
+   101 2668 FE FE FE FE F3 F3 + 	.he FE FE FE FE F3 F3 F3 F3 F3 F3 F3 F3 F3 F3 F7 FF
+   102 2678 FF FF FF FF FF FF + 	.he FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+   103 2688 F7 EF EF FF FF FF + 	.he F7 EF EF FF FF FF FF DF DF BF BF BF BF 7F 7F 7F
+   104 2698 7F FF FF FF FF FF + 	.he 7F FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+   105 26A8 FF FF FF FF FF FF + 	.he FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+   106 26B8 FF FF FF FF FF FF + 	.he FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+   107 26C8 FF FF FF FF FF FF + 	.he FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+   108 26D8 FF FF FF FF 00 00 + 	.he FF FF FF FF 00 00 00 00 00 00 00 00 00 00 00 00
+   109 26E8 00 00 00 00 00 00 + 	.he 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+   110 26F8 00 00 00 00 00 00 + 	.he 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+   111 2708 00 00 00 00 00 00 + 	.he 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+   112 2718			player3
+   113 2718 00 00 00 00 00 00 + 	.he 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+   114 2728 00 00 00 00 00 00 + 	.he 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+   115 2738 00 00 00 00 00 00 + 	.he 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+   116 2748 00 00 00 00 00 FF + 	.he 00 00 00 00 00 FF FD FD FD F5 FF E3 EC FD FF EE
+   117 2758 FF EF FF FE DE DF + 	.he FF EF FF FE DE DF FF FF FF FF DF FF DF FF DF FF
+   118 2768 7F FF 7F 7F 5F FF + 	.he 7F FF 7F 7F 5F FF FF FF FF FF FF FE FE FF FF FF
+   119 2778 FF FF FC F3 F7 FB + 	.he FF FF FC F3 F7 FB FB FF FF FF FF FF FF FF FF FF
+   120 2788 FF FF FF FF FF FF + 	.he FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+   121 2798 FF FF FF FF FF FF + 	.he FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+   122 27A8 FF FF FF FF FF FF + 	.he FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+   123 27B8 FF FF FF FF FF FF + 	.he FF FF FF FF FF FF FF FF FF FF FF FF FE FE FE FE
+   124 27C8 FE FE FF FF FF FF + 	.he FE FE FF FF FF FF FF FF FE FE FE FE FE FE FE FF
+   125 27D8 FF FF FF FF 00 00 + 	.he FF FF FF FF 00 00 00 00 00 00 00 00 00 00 00 00
+   126 27E8 00 00 00 00 00 00 + 	.he 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+   127 27F8 00 00 00 00 00 00 + 	.he 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+   128 2808 00 00 00 00 00 00 + 	.he 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00	
+   129 						
+   130 						
+   131 2818					org $6000
+   132 6000			start		
+   133 				/*		lda #0
+   134 						tax
+   135 				@		equ *		
+   136 						.rept 5,#
+   137 						sta sprites1+$300+$100*:1,x			;czysc duszki
+   138 						.endr
+   139 						dex
+   140 						bne @-  */
+   140
+   141
+   142
+   143
+   144 6000-6198> A2 00				ldx #0
+   145 = 6002			@		equ *		
+   146 						.rept 8,#
+   147 						LDA $4000+$100*:1,X
+   148 						STA EKRAN+$100*:1,X			
+   149 						.ENDR
+   149 						.endr
+Source: REPT
+   147 6002 BD 00 40				LDA $4000+$100*0,X
+   147 6005 9D 00 2C				STA EKRAN+$100*0,X			
+   147 6008 BD 00 41				LDA $4000+$100*1,X
+   147 600B 9D 00 2D				STA EKRAN+$100*1,X			
+   147 600E BD 00 42				LDA $4000+$100*2,X
+   147 6011 9D 00 2E				STA EKRAN+$100*2,X			
+   147 6014 BD 00 43				LDA $4000+$100*3,X
+   147 6017 9D 00 2F				STA EKRAN+$100*3,X			
+   147 601A BD 00 44				LDA $4000+$100*4,X
+   147 601D 9D 00 30				STA EKRAN+$100*4,X			
+   147 6020 BD 00 45				LDA $4000+$100*5,X
+   147 6023 9D 00 31				STA EKRAN+$100*5,X			
+   147 6026 BD 00 46				LDA $4000+$100*6,X
+   147 6029 9D 00 32				STA EKRAN+$100*6,X			
+   147 602C BD 00 47				LDA $4000+$100*7,X
+   147 602F 9D 00 33				STA EKRAN+$100*7,X			
+Source: title2.asm
+   150 6032 CA					dex
+   151 6033 D0 CD				jne @-
+   152 						
+   153 6035 A2 7F				ldx #127
+   154 6037 BD 00 48		@		lda $4800,x
+   155 603A 9D 00 34				sta ekran+$800,x
+   156 603D CA					dex
+   157 603E 10 F7				bpl @-
+   158 						
+   159 						
+   160 						
+   161 						
+   162 6040 A2 00				ldx #0
+   163 = 6042			@		equ *		
+   164 						.rept 11,#
+   165 						LDA $4C80+$100*:1,X
+   166 						STA EKRAN+$900+$100*:1,X		
+   167 						.ENDR
+   167 						.endr
+Source: REPT
+   165 6042 BD 80 4C				LDA $4C80+$100*0,X
+   165 6045 9D 00 35				STA EKRAN+$900+$100*0,X		
+   165 6048 BD 80 4D				LDA $4C80+$100*1,X
+   165 604B 9D 00 36				STA EKRAN+$900+$100*1,X		
+   165 604E BD 80 4E				LDA $4C80+$100*2,X
+   165 6051 9D 00 37				STA EKRAN+$900+$100*2,X		
+   165 6054 BD 80 4F				LDA $4C80+$100*3,X
+   165 6057 9D 00 38				STA EKRAN+$900+$100*3,X		
+   165 605A BD 80 50				LDA $4C80+$100*4,X
+   165 605D 9D 00 39				STA EKRAN+$900+$100*4,X		
+   165 6060 BD 80 51				LDA $4C80+$100*5,X
+   165 6063 9D 00 3A				STA EKRAN+$900+$100*5,X		
+   165 6066 BD 80 52				LDA $4C80+$100*6,X
+   165 6069 9D 00 3B				STA EKRAN+$900+$100*6,X		
+   165 606C BD 80 53				LDA $4C80+$100*7,X
+   165 606F 9D 00 3C				STA EKRAN+$900+$100*7,X		
+   165 6072 BD 80 54				LDA $4C80+$100*8,X
+   165 6075 9D 00 3D				STA EKRAN+$900+$100*8,X		
+   165 6078 BD 80 55				LDA $4C80+$100*9,X
+   165 607B 9D 00 3E				STA EKRAN+$900+$100*9,X		
+   165 607E BD 80 56				LDA $4C80+$100*10,X
+   165 6081 9D 00 3F				STA EKRAN+$900+$100*10,X		
+Source: title2.asm
+   168 6084 CA					dex
+   169 6085 D0 BB				jne @-
+   170 						
+   171 6087 A9 00 8D 00 28 A9 + 		mwa #sprites1+$800 znaki
+   172 6091 A9 80 85 CB A9 48 + 		mwa #$4880 pom0
+   173 6099 20 6F 61				jsr przepisz_znak
+   174
+   175 609C A9 80 85 CB A9 49 + 		mwa #$4980 pom0
+   176 60A4 20 6F 61				jsr przepisz_znak
+   177 					
+   178 60A7 A9 80 85 CB A9 4A + 		mwa #$4A80 pom0
+   179 60AF 20 6F 61				jsr przepisz_znak
+   180 					
+   181 60B2 A9 80 85 CB A9 4B + 		mwa #$4B80 pom0
+   182 60BA 20 6F 61				jsr przepisz_znak
+   183 						
+   184 60BD A2 7F				ldx #127
+   185 60BF 8A			@		txa
+   186 60C0 9D 80 34				sta ekran+$880,x
+   187 60C3 CA					dex
+   188 60C4 10 F9				bpl @-
+   189 						
+   190 60C6 A0 1E				ldy #31-1
+   191 60C8 BE C8 20		@		ldx tabNeg,y
+   192 60CB BD 80 34				lda ekran+$880,x
+   193 60CE 49 80				eor #128
+   194 60D0 9D 80 34				sta ekran+$880,x
+   195 60D3 88					dey
+   196 60D4 10 F2				bpl @-
+   197 						
+   198 						
+   199
+   200 						
+   201 						
+   202 60D6 A5 14				lda 20
+   203 60D8 C5 14		@		cmp 20
+   204 60DA F0 FC				beq @-
+   205 						
+   206 60DC A9 00 8D 30 02 A9 + 		mwa #dlist	560
+   207 60E6 A9 00 8D 02 D4 A9 + 		mwa #dlist dlptr
+   208 60F0 A9 39 8D 2F 02			mva #41+16 559
+   209 						
+   210 60F5 A9 34 8D C8 02			mva #$34 712	;tlo
+   211 60FA A9 00 8D C4 02			mva #$00 708
+   212 60FF A9 EE 8D C5 02			mva #$EE 709
+   213 6104 A9 0C 8D C6 02			mva #$0C 710
+   214 6109 A9 A6 8D C7 02			mva #$A6 711
+   215 						
+   216 610E A9 70 8D 00 D0			mva #$70 hposp0
+   217 6113 A9 8A 8D 01 D0			mva #$8A hposp1
+   218 6118 A9 52 8D 02 D0			mva #$52 hposp2
+   219 611D A9 72 8D 03 D0			mva #$72 hposp3
+   220 6122 A9 90 8D 04 D0			mva #$90 hposm0
+   221 6127 A9 AA 8D 05 D0			mva #$aa hposm1 
+   222 612C A9 8E 8D 07 D0			mva #$8e hposm3
+   223 						
+   224 6131 A9 03 8D 08 D0			mva #3 sizep0
+   225 6136 8D 09 D0				sta sizep1
+   226 6139 8D 0A D0				sta sizep2
+   227 613C 8D 0B D0				sta sizep3
+   228 613F A9 FF 8D 0C D0			mva #$ff sizem
+   229 						
+   230 6144 A9 1C 8D C0 02			mva #$1c 704		;kolory duszkÃ³w
+   231 6149 A9 88 8D C1 02			mva #$88 705
+   232 614E A9 08 8D C2 02			mva #$08 706
+   233 6153 A9 06 8D C3 02			mva #$06 707
+   234 						
+   235 6158 A9 28 8D F4 02			mva #>znaki chbas
+   236 						
+   237 615D A9 20 8D 07 D4			mva #>sprites1 pmbase			; enable PMGs
+   238 6162 A9 03 8D 1D D0			mva #3 pmcntl
+   239 6167 A9 04 8D 6F 02			mva #4 623
+   240 						
+   241 616C 4C 6C 61				jmp *
+   242 						
+   243 						
+   244 = 616F			przepisz_znak	equ *	
+   245 616F A9 20 85 CD				mva #32 pom1
+   246 6173 A2 07		@		ldx #7
+   247 6175 BC C0 20		@		ldy YTab,x
+   248 6178 B1 CB				lda (pom0),y
+   249 = 617B			_znaki	equ *+1		
+   250 617A 9D 00 28				sta znaki,x
+   251 617D CA					dex
+   252 617E 10 F5				bpl @-
+   253 6180 E6 CB				inc pom0
+   254 6182 D0 02				bne *+4
+   255 6184 E6 CC				inc pom0+1
+   256 6186 18					clc
+   257 6187 AD 7B 61				lda _znaki
+   258 618A 69 08				adc #8
+   259 618C 8D 7B 61				sta _znaki
+   260 618F 90 03				bcc *+5
+   261 6191 EE 7C 61				inc _znaki+1
+   262 6194 C6 CD				dec pom1
+   263 6196 D0 DB				bne @-1
+   264 6198 60					rts		
+   265 						
+   266 02E0-02E1> 00 60				run start

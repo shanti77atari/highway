@@ -1,0 +1,586 @@
+mads 2.0.4 build 13 (8 May 16)
+Source: title0.asm
+     1 						icl 'atari.hea'
+Source: atari.hea
+     1
+     2 				.enum	@dmactl
+     3 = 0000				blank	= %00
+     4 = 0001				narrow	= %01
+     5 = 0002				standard= %10
+     6 = 0003				wide	= %11
+     7 = 0004				missiles= %100
+     8 = 0008				players	= %1000
+     9 = 0010				lineX1	= %10000
+    10 = 0000				lineX2	= %00000
+    11 = 0020				dma	= %100000
+    12 				.ende
+    13
+    14 = 003F			scr48	= @dmactl(wide|dma|players|missiles|lineX1)		;screen 48b
+    15 = 003E			scr40	= @dmactl(standard|dma|players|missiles|lineX1)		;screen 40b
+    16 = 003D			scr32	= @dmactl(narrow|dma|players|missiles|lineX1)		;screen 32b
+    17
+    18 				.enum	@pmcntl
+    19 = 0001				missiles= %1
+    20 = 0002				players	= %10
+    21 = 0004				trigs	= %100
+    22 				.ende
+    23
+    24 				.enum	@gtictl
+    25 = 0000				prior0	= %0
+    26 = 0001				prior1	= %1
+    27 = 0002				prior2	= %10
+    28 = 0004				prior4	= %100
+    29 = 0008				prior8	= %1000
+    30 = 0010				ply5	= %10000	; Fifth Player Enable
+    31 = 0020				mlc	= %100000	; Multiple Color Player Enable
+    32 = 0040				mode9	= %01000000
+    33 = 0080				mode10	= %10000000
+    34 = 00C0				mode11	= %11000000
+    35 				.ende
+    36
+    37
+    38 				* ---------------------------------------------------------------------------------------------
+    39 				* ---	OS
+    40 				* ---------------------------------------------------------------------------------------------
+    41
+    42 = 0052			lmargin	= $52
+    43 = 0053			rmargin	= $53
+    44 = 0054			rowcrs	= $54
+    45 = 0055			colcrs	= $55
+    46
+    47 				* ---------------------------------------------------------------------------------------------
+    48 				* ---	KEY ($d209)
+    49 				* ---------------------------------------------------------------------------------------------
+    50 = 001C			key_esc		= 28
+    51 = 0021			key_space	= 33
+    52 = 0010			key_v		= 16
+    53 = 0015			key_b		= 21
+    54 = 0023			key_n		= 35
+    55 = 0025			key_m		= 37
+    56
+    57 				* ---------------------------------------------------------------------------------------------
+    58 				* ---	GTIA
+    59 				* ---------------------------------------------------------------------------------------------
+    60 = D000			hposp0	=	$D000		; pozioma pozycja gracza 0 (Z)
+    61 = D001			hposp1	=	$D001		; pozioma pozycja gracza 1 (Z)
+    62 = D002			hposp2	=	$D002		; pozioma pozycja gracza 2 (Z)
+    63 = D003			hposp3	=	$D003		; pozioma pozycja gracza 3 (Z)
+    64 = D004			hposm0	=	$D004		; pozioma pozycja pocisku 0 (Z)
+    65 = D005			hposm1	=	$D005		; pozioma pozycja pocisku 1 (Z)
+    66 = D006			hposm2	=	$D006		; pozioma pozycja pocisku 2 (Z)
+    67 = D007			hposm3	=	$D007		; pozioma pozycja pocisku 3 (Z)
+    68 = D008			sizep0	=	$D008		; poziomy rozmiar gracza 0 (Z)
+    69 = D009			sizep1	=	$D009		; poziomy rozmiar gracza 1 (Z)
+    70 = D00A			sizep2	=	$D00A		; poziomy rozmiar gracza 2 (Z)
+    71 = D00B			sizep3	=	$D00B		; poziomy rozmiar gracza 3 (Z)
+    72 = D00C			sizem	=	$D00C		; poziomy rozmiar pocisków (Z)
+    73 = D00D			grafp0	=	$D00D		; rejestr grafiki gracza 0 (Z)
+    74 = D00E			grafp1	=	$D00E		; rejestr grafiki gracza 1 (Z)
+    75 = D00F			grafp2	=	$D00F		; rejestr grafiki gracza 2 (Z)
+    76 = D010			grafp3	=	$D010		; rejestr grafiki gracza 3 (Z)
+    77 = D011			grafm	=	$D011		; rejestr grafiki pocisków (Z)
+    78 = D012			colpm0	=	$D012		; rejestr koloru gracza i pocisku 0 (Z)
+    79 = D013			colpm1	=	$D013		; rejestr koloru gracza i pocisku 1 (Z)
+    80 = D014			colpm2	=	$D014		; rejestr koloru gracza i pocisku 2 (Z)
+    81 = D015			colpm3	=	$D015		; rejestr koloru gracza i pocisku 3 (Z)
+    82 = D016			colpf0	=	$D016		; rejestr koloru pola gry 0 (Z)
+    83 = D017			colpf1	=	$D017		; rejestr koloru pola gry 1 (Z)
+    84 = D018			colpf2	=	$D018		; rejestr koloru pola gry 2 (Z)
+    85 = D019			colpf3	=	$D019		; rejestr koloru pola gry 3 (Z)
+    86 = D01A			colbak	=	$D01A		; rejestr koloru t³a (Z)
+    87
+    88 = D016			color0	=	colpf0
+    89 = D017			color1	=	colpf1
+    90 = D018			color2	=	colpf2
+    91 = D019			color3	=	colpf3
+    92
+    93 = D000			kolm0pf	=	$D000		; kolizja pocisku 0 z polem gry (O)
+    94 = D001			kolm1pf	=	$D001		; kolizja pocisku 1 z polem gry (O)
+    95 = D002			kolm2pf	=	$D002		; kolizja pocisku 2 z polem gry (O)
+    96 = D003			kolm3pf	=	$D003		; kolizja pocisku 3 z polem gry (O)
+    97 = D004			kolp0pf	=	$D004		; kolizja gracza 0 z polem gry (O)
+    98 = D005			kolp1pf	=	$D005		; kolizja gracza 1 z polem gry (O)
+    99 = D006			kolp2pf	=	$D006		; kolizja gracza 2 z polem gry (O)
+   100 = D007			kolp3pf	=	$D007		; kolizja gracza 3 z polem gry (O)
+   101 = D008			kolm0p	=	$D008		; kolizja pocisku 0 z graczem (O)
+   102 = D009			kolm1p	=	$D009		; kolizja pocisku 1 z graczem (O)
+   103 = D00A			kolm2p	=	$D00A		; kolizja pocisku 2 z graczem (O)
+   104 = D00B			kolm3p	=	$D00B		; kolizja pocisku 3 z graczem (O)
+   105 = D00C			kolp0p	=	$D00C		; kolizja gracza 0 z innym graczem (O)
+   106 = D00D			kolp1p	=	$D00D		; kolizja gracza 1 z innym graczem (O)
+   107 = D00E			kolp2p	=	$D00E		; kolizja gracza 2 z innym graczem (O)
+   108 = D00F			kolp3p	=	$D00F		; kolizja gracza 3 z innym graczem (O)
+   109 = D010			trig0	=	$D010		; stan przycisku joysticka 0 (O)
+   110 = D011			trig1	=	$D011		; stan przycisku joysticka 1 (O)
+   111 = D013			trig3	=	$D013		; znacznik do³¹czenia cartridge-a (O)
+   112 = D014			pal	=	$D014		; znacznik systemu TV (O)
+   113
+   114 = D01B			gtictl	=	$D01B		; rejestr kontroli uk³adu GTIA
+   115 = D01B			gtiactl	=	gtictl
+   116
+   117 = D01C			vdelay	=	$D01C		; licznik opóŸnienia pionowego P/MG
+   118 = D01D			pmcntl	=	$D01D		; rejestr kontroli graczy i pocisków
+   119 = D01E			hitclr	=	$D01E		; rejestr kasowania rejestrów kolizji
+   120 = D01F			consol	=	$D01F		; rejestr stanu klawiszy konsoli
+   121
+   122 				* ---------------------------------------------------------------------------------------------
+   123 				* ---	POKEY
+   124 				* ---------------------------------------------------------------------------------------------
+   125
+   126 = 0010			irqens	=	$0010		; rejestr-cieñ IRQEN
+   127 = 0011			irqstat	=	$0011		; rejestr-cieñ IRQST
+   128
+   129 = D200			audf1	=	$d200		; czêstotliwoœæ pracy generatora 1 (Z)
+   130 = D201			audc1	=	$d201		; rejestr kontroli dŸwiêku generatora 1 (Z)
+   131 = D202			audf2	=	$d202		; czêstotliwoœæ pracy generatora 2 (Z)
+   132 = D203			audc2	=	$d203		; rejestr kontroli dŸwiêku generatora 2 (Z)
+   133 = D204			audf3	=	$d204		; czêstotliwoœæ pracy generatora 3 (Z)
+   134 = D205			audc3	=	$d205		; rejestr kontroli dŸwiêku generatora 3 (Z)
+   135 = D206			audf4	=	$d206		; czêstotliwoœæ pracy generatora 4 (Z)
+   136 = D207			audc4	=	$d207		; rejestr kontroli dŸwiêku generatora 4 (Z)
+   137
+   138 = D208			audctl	=	$D208		; rejestr kontroli generatorów dŸwiêku (Z)
+   139 = D209			stimer	=	$D209		; rejestr zerowania liczników (Z)
+   140 = D209			kbcode	=	$D209		; kod ostatnio naciœniêtego klawisza (O)
+   141 = D20A			skstres	=	$D20A		; rejestr statusu z³¹cza szeregowego (Z)
+   142 = D20A			random	=	$D20A		; rejestr liczby losowej (O)
+   143 = D20D			serout	=	$D20D		; szeregowy rejestr wyjœciowy (Z)
+   144 = D20D			serin	=	$D20D		; szeregowy rejestr wejœciowy (O)
+   145 = D20E			irqen	=	$D20E		; zezwolenie przerwañ IRQ (Z)
+   146 = D20E			irqst	=	$D20E		; status przerwañ IRQ (O)
+   147 = D20F			skctl	=	$D20F		; rejestr kontroli z³¹cza szeregowego (Z)
+   148 = D20F			skstat	=	$D20F		; rejestr statusu z³¹cza szeregowego (O)
+   149
+   150 				* ---------------------------------------------------------------------------------------------
+   151 				* ---	PIA
+   152 				* ---------------------------------------------------------------------------------------------
+   153 = D300			porta	=	$D300		; port A uk³adu PIA
+   154 = D301			portb	=	$D301		; port B uk³adu PIA
+   155 = D302			pactl	=	$D302		; rejestr kontroli portu A
+   156 = D303			pbctl	=	$D303		; rejestr kontroli portu B
+   157
+   158 				* ---------------------------------------------------------------------------------------------
+   159 				* ---	ANTIC
+   160 				* ---------------------------------------------------------------------------------------------
+   161 = D400			dmactl	=	$D400		; rejestr kontroli dostêpu do pamiêci
+   162 = D401			chrctl	=	$D401		; rejestr kontroli wyœwietlania znaków
+   163 = D402			dlptr	=	$D402		; adres programu ANTIC-a
+   164 = D404			hscrol	=	$D404		; znacznik poziomego przesuwu obrazu
+   165 = D405			vscrol	=	$D405		; znacznik pionowego przesuwu obrazu
+   166 = D407			pmbase	=	$D407		; adres pamiêci graczy i pocisków
+   167 = D409			chbase	=	$D409		; adres zestawu znaków
+   168 = D40A			wsync	=	$D40A		; znacznik oczekiwania na synchronizacjê poziom¹
+   169 = D40B			vcount	=	$D40B		; licznik linii obrazu
+   170 = D40C			lpenh	=	$D40C		; poziome po³o¿enie pióra œwietlengo
+   171 = D40D			lpenv	=	$D40D		; pionowe po³o¿enie pióra œwietlnego
+   172 = D40E			nmien	=	$D40E		; rejestr zezwoleñ na przerwania NMI
+   173 = D40F			nmist	=	$D40F		; rejestr statusu przerwañ NMI
+   174
+   175 				* ---------------------------------------------------------------------------------------------
+   176 				* ---	OS
+   177 				* ---------------------------------------------------------------------------------------------
+   178
+   179 = 02C4			colpf0s	=	$02C4		; rejestr-cieñ COLPF0
+   180 = 02C5			colpf1s	=	$02C5		; rejestr-cieñ COLPF1
+   181 = 02C6			colpf2s	=	$02C6		; rejestr-cieñ COLPF2
+   182 = 02C7			colpf3s	=	$02C7		; rejestr-cieñ COLPF3
+   183 = 02C8			colbaks	=	$02C8		; rejestr-cieñ COLBAK
+   184
+   185 				* ---------------------------------------------------------------------------------------------
+   186 				* ---	HARDWARE
+   187 				* ---------------------------------------------------------------------------------------------
+   188
+   189 = FFFA			nmivec	=	$FFFA		; wektor przerwania NMI
+   190 = FFFC			resetvec=	$FFFC		; wektor przerwania RESET
+   191 = FFFE			irqvec	=	$FFFE		; wektor przerwania IRQ
+     2 						
+     3 = 0050			pom0	equ $50
+     4 = 005E			ntsc	equ $5e		
+     5 						
+     6 						org $2000
+     7 FFFF> 2000-235D> 55 55 + 		.he 55,55,55,55,55,55,55,55
+     8 						
+     9 2008 44 5A 22 44 5A 22 + dlist0		dta $44,a(puste),$44,a(puste),$44,a(puste)
+    10 2011 4E 00 90				dta $4e, a(spectrum_screen1+$0000)
+    11 2014 4E 00 92				dta $4e, a(spectrum_screen1+$0200)
+    12 2017 4E 00 94				dta $4e, a(spectrum_screen1+$0400)
+    13 201A 4E 00 96				dta $4e, a(spectrum_screen1+$0600)
+    14 201D 4E 00 98				dta $4e, a(spectrum_screen1+$0800)
+    15 2020 4E 00 9A				dta $4e, a(spectrum_screen1+$0a00)
+    16 2023 4E 00 9C				dta $4e, a(spectrum_screen1+$0c00)
+    17 2026 4E 00 9E				dta $4e, a(spectrum_screen1+$0e00)
+    18
+    19 2029 4E 40 90				dta $4e, a(spectrum_screen1+$0000+$40)
+    20 202C 4E 40 92				dta $4e, a(spectrum_screen1+$0200+$40)
+    21 202F 4E 40 94				dta $4e, a(spectrum_screen1+$0400+$40)
+    22 2032 4E 40 96				dta $4e, a(spectrum_screen1+$0600+$40)
+    23 2035 4E 40 98				dta $4e, a(spectrum_screen1+$0800+$40)
+    24 2038 4E 40 9A				dta $4e, a(spectrum_screen1+$0a00+$40)
+    25 203B 4E 40 9C				dta $4e, a(spectrum_screen1+$0c00+$40)
+    26 203E 4E 40 9E				dta $4e, a(spectrum_screen1+$0e00+$40)
+    27
+    28 2041 4E 80 90				dta $4e, a(spectrum_screen1+$0000+$80)
+    29 2044 4E 80 92				dta $4e, a(spectrum_screen1+$0200+$80)
+    30 2047 4E 80 94				dta $4e, a(spectrum_screen1+$0400+$80)
+    31 204A 4E 80 96				dta $4e, a(spectrum_screen1+$0600+$80)
+    32 204D 4E 80 98				dta $4e, a(spectrum_screen1+$0800+$80)
+    33 2050 4E 80 9A				dta $4e, a(spectrum_screen1+$0a00+$80)
+    34 2053 4E 80 9C				dta $4e, a(spectrum_screen1+$0c00+$80)
+    35 2056 4E 80 9E				dta $4e, a(spectrum_screen1+$0e00+$80)
+    36 						
+    37 2059 4E C0 90				dta $4e, a(spectrum_screen1+$0000+$c0)
+    38 205C 4E C0 92				dta $4e, a(spectrum_screen1+$0200+$c0)
+    39 205F 4E C0 94				dta $4e, a(spectrum_screen1+$0400+$c0)
+    40 2062 4E C0 96				dta $4e, a(spectrum_screen1+$0600+$c0)
+    41 2065 4E C0 98				dta $4e, a(spectrum_screen1+$0800+$c0)
+    42 2068 4E C0 9A				dta $4e, a(spectrum_screen1+$0a00+$c0)
+    43 206B 4E C0 9C				dta $4e, a(spectrum_screen1+$0c00+$c0)
+    44 206E 4E C0 9E				dta $4e, a(spectrum_screen1+$0e00+$c0)
+    45 						
+    46 2071 4E 00 91				dta $4e, a(spectrum_screen1+$0000+$100)
+    47 2074 4E 00 93				dta $4e, a(spectrum_screen1+$0200+$100)
+    48 2077 4E 00 95				dta $4e, a(spectrum_screen1+$0400+$100)
+    49 207A 4E 00 97				dta $4e, a(spectrum_screen1+$0600+$100)
+    50 207D 4E 00 99				dta $4e, a(spectrum_screen1+$0800+$100)
+    51 2080 4E 00 9B				dta $4e, a(spectrum_screen1+$0a00+$100)
+    52 2083 4E 00 9D				dta $4e, a(spectrum_screen1+$0c00+$100)
+    53 2086 4E 00 9F				dta $4e, a(spectrum_screen1+$0e00+$100)
+    54 						
+    55 2089 4E 40 91				dta $4e, a(spectrum_screen1+$0000+$140)
+    56 208C 4E 40 93				dta $4e, a(spectrum_screen1+$0200+$140)
+    57 208F 4E 40 95				dta $4e, a(spectrum_screen1+$0400+$140)
+    58 2092 4E 40 97				dta $4e, a(spectrum_screen1+$0600+$140)
+    59 2095 4E 40 99				dta $4e, a(spectrum_screen1+$0800+$140)
+    60 2098 4E 40 9B				dta $4e, a(spectrum_screen1+$0a00+$140)
+    61 209B 4E 40 9D				dta $4e, a(spectrum_screen1+$0c00+$140)
+    62 209E 4E 40 9F				dta $4e, a(spectrum_screen1+$0e00+$140)
+    63 						
+    64 20A1 4E 80 91				dta $4e, a(spectrum_screen1+$0000+$180)
+    65 20A4 4E 80 93				dta $4e, a(spectrum_screen1+$0200+$180)
+    66 20A7 4E 80 95				dta $4e, a(spectrum_screen1+$0400+$180)
+    67 20AA 4E 80 97				dta $4e, a(spectrum_screen1+$0600+$180)
+    68 20AD 4E 80 99				dta $4e, a(spectrum_screen1+$0800+$180)
+    69 20B0 4E 80 9B				dta $4e, a(spectrum_screen1+$0a00+$180)
+    70 20B3 4E 80 9D				dta $4e, a(spectrum_screen1+$0c00+$180)
+    71 20B6 4E 80 9F				dta $4e, a(spectrum_screen1+$0e00+$180)
+    72 					
+    73 20B9 4E C0 91				dta $4e, a(spectrum_screen1+$0000+$1c0)
+    74 20BC 4E C0 93				dta $4e, a(spectrum_screen1+$0200+$1c0)
+    75 20BF 4E C0 95				dta $4e, a(spectrum_screen1+$0400+$1c0)
+    76 20C2 4E C0 97				dta $4e, a(spectrum_screen1+$0600+$1c0)
+    77 20C5 4E C0 99				dta $4e, a(spectrum_screen1+$0800+$1c0)
+    78 20C8 4E C0 9B				dta $4e, a(spectrum_screen1+$0a00+$1c0)
+    79 20CB 4E C0 9D				dta $4e, a(spectrum_screen1+$0c00+$1c0)
+    80 20CE 4E C0 9F				dta $4e, a(spectrum_screen1+$0e00+$1c0)
+    81
+    82 20D1 4E 00 A0				dta $4e, a(spectrum_screen1+$1000)
+    83 20D4 4E 00 A2				dta $4e, a(spectrum_screen1+$1200)
+    84 20D7 4E 00 A4				dta $4e, a(spectrum_screen1+$1400)
+    85 20DA 4E 00 A6				dta $4e, a(spectrum_screen1+$1600)
+    86 20DD 4E 00 A8				dta $4e, a(spectrum_screen1+$1800)
+    87 20E0 4E 00 AA				dta $4e, a(spectrum_screen1+$1a00)
+    88 20E3 4E 00 AC				dta $4e, a(spectrum_screen1+$1c00)
+    89 20E6 4E 00 AE				dta $4e, a(spectrum_screen1+$1e00)
+    90 						
+    91 20E9 4E 40 A0				dta $4e, a(spectrum_screen1+$1000+$40)
+    92 20EC 4E 40 A2				dta $4e, a(spectrum_screen1+$1200+$40)
+    93 20EF 4E 40 A4				dta $4e, a(spectrum_screen1+$1400+$40)
+    94 20F2 4E 40 A6				dta $4e, a(spectrum_screen1+$1600+$40)
+    95 20F5 4E 40 A8				dta $4e, a(spectrum_screen1+$1800+$40)
+    96 20F8 4E 40 AA				dta $4e, a(spectrum_screen1+$1a00+$40)
+    97 20FB 4E 40 AC				dta $4e, a(spectrum_screen1+$1c00+$40)
+    98 20FE 4E 40 AE				dta $4e, a(spectrum_screen1+$1e00+$40)
+    99 						
+   100 2101 4E 80 A0				dta $4e, a(spectrum_screen1+$1000+$80)
+   101 2104 4E 80 A2				dta $4e, a(spectrum_screen1+$1200+$80)
+   102 2107 4E 80 A4				dta $4e, a(spectrum_screen1+$1400+$80)
+   103 210A 4E 80 A6				dta $4e, a(spectrum_screen1+$1600+$80)
+   104 210D 4E 80 A8				dta $4e, a(spectrum_screen1+$1800+$80)
+   105 2110 4E 80 AA				dta $4e, a(spectrum_screen1+$1a00+$80)
+   106 2113 4E 80 AC				dta $4e, a(spectrum_screen1+$1c00+$80)
+   107 2116 4E 80 AE				dta $4e, a(spectrum_screen1+$1e00+$80)
+   108 						
+   109 2119 4E C0 A0				dta $4e, a(spectrum_screen1+$1000+$c0)
+   110 211C 4E C0 A2				dta $4e, a(spectrum_screen1+$1200+$c0)
+   111 211F 4E C0 A4				dta $4e, a(spectrum_screen1+$1400+$c0)
+   112 2122 4E C0 A6				dta $4e, a(spectrum_screen1+$1600+$c0)
+   113 2125 4E C0 A8				dta $4e, a(spectrum_screen1+$1800+$c0)
+   114 2128 4E C0 AA				dta $4e, a(spectrum_screen1+$1a00+$c0)
+   115 212B 4E C0 AC				dta $4e, a(spectrum_screen1+$1c00+$c0)
+   116 212E 4E C0 AE				dta $4e, a(spectrum_screen1+$1e00+$c0)
+   117 						
+   118 2131 4E 00 A1				dta $4e, a(spectrum_screen1+$1000+$100)
+   119 2134 4E 00 A3				dta $4e, a(spectrum_screen1+$1200+$100)
+   120 2137 4E 00 A5				dta $4e, a(spectrum_screen1+$1400+$100)
+   121 213A 4E 00 A7				dta $4e, a(spectrum_screen1+$1600+$100)
+   122 213D 4E 00 A9				dta $4e, a(spectrum_screen1+$1800+$100)
+   123 2140 4E 00 AB				dta $4e, a(spectrum_screen1+$1a00+$100)
+   124 2143 4E 00 AD				dta $4e, a(spectrum_screen1+$1c00+$100)
+   125 2146 4E 00 AF				dta $4e, a(spectrum_screen1+$1e00+$100)
+   126 						
+   127 2149 4E 40 A1				dta $4e, a(spectrum_screen1+$1000+$140)
+   128 214C 4E 40 A3				dta $4e, a(spectrum_screen1+$1200+$140)
+   129 214F 4E 40 A5				dta $4e, a(spectrum_screen1+$1400+$140)
+   130 2152 4E 40 A7				dta $4e, a(spectrum_screen1+$1600+$140)
+   131 2155 4E 40 A9				dta $4e, a(spectrum_screen1+$1800+$140)
+   132 2158 4E 40 AB				dta $4e, a(spectrum_screen1+$1a00+$140)
+   133 215B 4E 40 AD				dta $4e, a(spectrum_screen1+$1c00+$140)
+   134 215E 4E 40 AF				dta $4e, a(spectrum_screen1+$1e00+$140)
+   135 						
+   136 2161 4E 80 A1				dta $4e, a(spectrum_screen1+$1000+$180)
+   137 2164 4E 80 A3				dta $4e, a(spectrum_screen1+$1200+$180)
+   138 2167 4E 80 A5				dta $4e, a(spectrum_screen1+$1400+$180)
+   139 216A 4E 80 A7				dta $4e, a(spectrum_screen1+$1600+$180)
+   140 216D 4E 80 A9				dta $4e, a(spectrum_screen1+$1800+$180)
+   141 2170 4E 80 AB				dta $4e, a(spectrum_screen1+$1a00+$180)
+   142 2173 4E 80 AD				dta $4e, a(spectrum_screen1+$1c00+$180)
+   143 2176 4E 80 AF				dta $4e, a(spectrum_screen1+$1e00+$180)
+   144 						
+   145 2179 4E C0 A1				dta $4e, a(spectrum_screen1+$1000+$1c0)
+   146 217C 4E C0 A3				dta $4e, a(spectrum_screen1+$1200+$1c0)
+   147 217F 4E C0 A5				dta $4e, a(spectrum_screen1+$1400+$1c0)
+   148 2182 4E C0 A7				dta $4e, a(spectrum_screen1+$1600+$1c0)
+   149 2185 4E C0 A9				dta $4e, a(spectrum_screen1+$1800+$1c0)
+   150 2188 4E C0 AB				dta $4e, a(spectrum_screen1+$1a00+$1c0)
+   151 218B 4E C0 AD				dta $4e, a(spectrum_screen1+$1c00+$1c0)
+   152 218E 4E C0 AF				dta $4e, a(spectrum_screen1+$1e00+$1c0)
+   153
+   154 2191 4E 00 B0				dta $4e, a(spectrum_screen1+$2000)
+   155 2194 4E 00 B2				dta $4e, a(spectrum_screen1+$2200)
+   156 2197 4E 00 B4				dta $4e, a(spectrum_screen1+$2400)
+   157 219A 4E 00 B6				dta $4e, a(spectrum_screen1+$2600)
+   158 219D 4E 00 B8				dta $4e, a(spectrum_screen1+$2800)
+   159 21A0 4E 00 BA				dta $4e, a(spectrum_screen1+$2a00)
+   160 21A3 4E 00 BC				dta $4e, a(spectrum_screen1+$2c00)
+   161 21A6 4E 00 BE				dta $4e, a(spectrum_screen1+$2e00)
+   162 						
+   163 21A9 4E 40 B0				dta $4e, a(spectrum_screen1+$2000+$40)
+   164 21AC 4E 40 B2				dta $4e, a(spectrum_screen1+$2200+$40)
+   165 21AF 4E 40 B4				dta $4e, a(spectrum_screen1+$2400+$40)
+   166 21B2 4E 40 B6				dta $4e, a(spectrum_screen1+$2600+$40)
+   167 21B5 4E 40 B8				dta $4e, a(spectrum_screen1+$2800+$40)
+   168 21B8 4E 40 BA				dta $4e, a(spectrum_screen1+$2a00+$40)
+   169 21BB 4E 40 BC				dta $4e, a(spectrum_screen1+$2c00+$40)
+   170 21BE 4E 40 BE				dta $4e, a(spectrum_screen1+$2e00+$40)
+   171 						
+   172 21C1 4E 80 B0				dta $4e, a(spectrum_screen1+$2000+$80)
+   173 21C4 4E 80 B2				dta $4e, a(spectrum_screen1+$2200+$80)
+   174 21C7 4E 80 B4				dta $4e, a(spectrum_screen1+$2400+$80)
+   175 21CA 4E 80 B6				dta $4e, a(spectrum_screen1+$2600+$80)
+   176 21CD 4E 80 B8				dta $4e, a(spectrum_screen1+$2800+$80)
+   177 21D0 4E 80 BA				dta $4e, a(spectrum_screen1+$2a00+$80)
+   178 21D3 4E 80 BC				dta $4e, a(spectrum_screen1+$2c00+$80)
+   179 21D6 4E 80 BE				dta $4e, a(spectrum_screen1+$2e00+$80)
+   180 						
+   181 21D9 4E C0 B0				dta $4e, a(spectrum_screen1+$2000+$c0)
+   182 21DC 4E C0 B2				dta $4e, a(spectrum_screen1+$2200+$c0)
+   183 21DF 4E C0 B4				dta $4e, a(spectrum_screen1+$2400+$c0)
+   184 21E2 4E C0 B6				dta $4e, a(spectrum_screen1+$2600+$c0)
+   185 21E5 4E C0 B8				dta $4e, a(spectrum_screen1+$2800+$c0)
+   186 21E8 4E C0 BA				dta $4e, a(spectrum_screen1+$2a00+$c0)
+   187 21EB 4E C0 BC				dta $4e, a(spectrum_screen1+$2c00+$c0)
+   188 21EE 4E C0 BE				dta $4e, a(spectrum_screen1+$2e00+$c0)
+   189 						
+   190 21F1 4E 00 B1				dta $4e, a(spectrum_screen1+$2000+$100)
+   191 21F4 4E 00 B3				dta $4e, a(spectrum_screen1+$2200+$100)
+   192 21F7 4E 00 B5				dta $4e, a(spectrum_screen1+$2400+$100)
+   193 21FA 4E 00 B7				dta $4e, a(spectrum_screen1+$2600+$100)
+   194 21FD 4E 00 B9				dta $4e, a(spectrum_screen1+$2800+$100)
+   195 2200 4E 00 BB				dta $4e, a(spectrum_screen1+$2a00+$100)
+   196 2203 4E 00 BD				dta $4e, a(spectrum_screen1+$2c00+$100)
+   197 2206 4E 00 BF				dta $4e, a(spectrum_screen1+$2e00+$100)
+   198 						
+   199 2209 4E 40 B1				dta $4e, a(spectrum_screen1+$2000+$140)
+   200 220C 4E 40 B3				dta $4e, a(spectrum_screen1+$2200+$140)
+   201 220F 4E 40 B5				dta $4e, a(spectrum_screen1+$2400+$140)
+   202 2212 4E 40 B7				dta $4e, a(spectrum_screen1+$2600+$140)
+   203 2215 4E 40 B9				dta $4e, a(spectrum_screen1+$2800+$140)
+   204 2218 4E 40 BB				dta $4e, a(spectrum_screen1+$2a00+$140)
+   205 221B 4E 40 BD				dta $4e, a(spectrum_screen1+$2c00+$140)
+   206 221E 4E 40 BF				dta $4e, a(spectrum_screen1+$2e00+$140)
+   207 						
+   208 2221 4E 80 B1				dta $4e, a(spectrum_screen1+$2000+$180)
+   209 2224 4E 80 B3				dta $4e, a(spectrum_screen1+$2200+$180)
+   210 2227 4E 80 B5				dta $4e, a(spectrum_screen1+$2400+$180)
+   211 222A 4E 80 B7				dta $4e, a(spectrum_screen1+$2600+$180)
+   212 222D 4E 80 B9				dta $4e, a(spectrum_screen1+$2800+$180)
+   213 2230 4E 80 BB				dta $4e, a(spectrum_screen1+$2a00+$180)
+   214 2233 4E 80 BD				dta $4e, a(spectrum_screen1+$2c00+$180)
+   215 2236 4E 80 BF				dta $4e, a(spectrum_screen1+$2e00+$180)
+   216 						
+   217 2239 4E C0 B1				dta $4e, a(spectrum_screen1+$2000+$1c0)
+   218 223C 4E C0 B3				dta $4e, a(spectrum_screen1+$2200+$1c0)
+   219 223F 4E C0 B5				dta $4e, a(spectrum_screen1+$2400+$1c0)
+   220 2242 4E C0 B7				dta $4e, a(spectrum_screen1+$2600+$1c0)
+   221 2245 4E 8A 22 4E 8A 22 + 		dta $4e,a(puste1),$4e,a(puste1),$4e,a(puste1)
+   222 						
+   223 224E 44 5A 22 44 5A 22 + 		dta $44,a(puste),$44,a(puste),$44,a(puste)
+   224 						
+   225 2257 41 08 20				dta $41,a(dlist0) 	
+   226 						
+   227 = 225A			puste	equ *
+   228 225A 00 00 00 00 00 00 + 		:48 .he 00
+   229 228A 55 55 55 55 55 55 + puste1	:48 .he 55
+   230 						
+   231 						;org $5000
+   232 						
+   233 = 2800			sprites1	equ $2800			
+   234
+   235 						
+   236 22BA A9 00 85 CB A9 2B + ini		mwa #sprites1+$300 203
+   237 22C2 A9 00				lda #0
+   238 22C4 A8					tay
+   239 22C5 A2 1D				ldx #$1D
+   240 22C7 91 CB		@		sta (203),y
+   241 22C9 88					dey
+   242 22CA D0 FB				bne @-
+   243 22CC E6 CC				inc 204
+   244 22CE CA					dex
+   245 22CF D0 F6				bne @-
+   246 						
+   247
+   248 22D1 A5 14				lda 20
+   249 22D3 C5 14		@		cmp 20
+   250 22D5 F0 FC				beq @-
+   251 						
+   252 22D7 A9 08 8D 30 02 A9 + 		mwa #dlist0	560
+   253 22E1 A9 08 8D 02 D4 A9 + 		mwa #dlist0 dlptr
+   254 22EB A9 3B 8D 2F 02			mva #59 559
+   255 						
+   256 22F0 A9 20 8D F4 02			mva #>$2000 756
+   257 						
+   258 22F5 A9 04 8D C8 02			mva #$04 712	;tlo
+   259 22FA A9 00 8D C4 02			mva #$00 708
+   260 22FF A9 0E 8D C5 02			mva #$0E 709
+   261 2304 A9 0C 8D C6 02			mva #$0C 710
+   262 						
+   263 2309 A9 54 8D 00 D0			mva #$54 hposp0
+   264 230E A9 88 8D 01 D0			mva #$88 hposp1
+   265 2313 A9 50 8D 02 D0			mva #$50 hposp2
+   266 2318 A9 70 8D 03 D0			mva #$70 hposp3
+   267 231D A9 A8 8D 05 D0			mva #$A8 hposm1
+   268 2322 A9 8C 8D 07 D0			mva #$8C hposm3
+   269 						
+   270 2327 A9 03 8D 08 D0			mva #3 sizep0
+   271 232C 8D 09 D0				sta sizep1
+   272 232F 8D 0A D0				sta sizep2
+   273 2332 8D 0B D0				sta sizep3
+   274 2335 A9 FF 8D 0C D0			mva #$ff sizem
+   275 						
+   276 233A A9 08 8D C0 02			mva #$08 704		;kolory duszkÃ³w
+   277 233F 8D C1 02				sta 705
+   278 2342 8D C2 02				sta 706
+   279 2345 8D C3 02				sta 707
+   280 						
+   281 2348 A9 28 8D 07 D4			mva #>sprites1 pmbase			; enable PMGs
+   282 234D A9 03 8D 1D D0			mva #3 pmcntl
+   283 2352 A9 04 8D 6F 02			mva #4 623
+   284 						
+   285 2357 A5 14				lda 20
+   286 2359 C5 14		@		cmp 20
+   287 235B F0 FC				beq @-
+   288 						
+   289 235D 60					rts
+   290 						
+   291 02E2-02E3> BA 22				ini ini
+   292
+   293 = 9000			spectrum_screen1	equ $9000
+   294 						
+   295 235E					org spectrum_screen1
+   296 9000-BFFF> 55 55 55 55 + 		ins 'title0.dat'
+   297 						
+   298 C000					org sprites1+$38A
+   299 2B8A-2BB8> 0C 0C 0C 0C + 		.he 0C 0C 0C 0C 0C 08 0C 0C 0C 0C 0C 0C 0C 0C 0C 0C
+   300 2B9A 0C 0C 0C 0C 0C 0C + 		.he 0C 0C 0C 0C 0C 0C 08 0C 08 08 0C 08 0C 0C 0C 0C 
+   301 2BAA 0C 0C 0C 04 0C 04 + 		.he 0C 0C 0C 04 0C 04 00 00 00 C0 C0 C0 C0 C0 C0 
+   302 						
+   303 2BB9					org sprites1+$44B+$18
+   304 2C63-2C87> 9F DF 9F 3F + 		.he 9F DF 9F 3F DF
+   305 2C68 3F DF 7F BF BF FF + 		.he 3F DF 7F BF BF FF BF FF FF FF 7F FF FF FF 7F 7F
+   306 2C78 7F FF 3F 3F FF FF + 		.he 7F FF 3F 3F FF FF FF FF FF FF FF BF 00 00 00 00
+   307 						
+   308 2C88					org sprites1+$559+$18
+   309 2D71-2DBC> FF FF BF BF + 		.he FF FF BF BF FF FF FF
+   310 2D78 FF FF 3F FF FF FF + 		.he FF FF 3F FF FF FF FF FF FF FF FF FF FF FE FE FE
+   311 2D88 FF FF FF FF FF FF + 		.he FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+   312 2D98 FF FF FF FF FF FF + 		.he FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+   313 2DA8 FF FF FF FF FF FF + 		.he FF FF FF FF FF FF FF FF FF FF FF FF FF FF DF DF
+   314 2DB8 9F 3F FF DF FF			.he 9F 3F FF DF FF
+   315 						
+   316 2DBD					org sprites1+$630+$18
+   317 2E48-2EDB> FD FF FF FF + 		.he FD FF FF FF FF FF FF FF 7F 3F BF DF CF EF FF FF
+   318 2E58 FF FF FF FF FF FF + 		.he FF FF FF FF FF FF FF FF FF F7 9F 7F FF FF FF FF
+   319 2E68 FF FF FF FF FF FF + 		.he FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+   320 2E78 FF FF FF FF FF FF + 		.he FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+   321 2E88 F7 EF EF FF FF FF + 		.he F7 EF EF FF FF FF FF DF DF BF BF BF BF 7F 7F 7F
+   322 2E98 7F FF FF FF FF FF + 		.he 7F FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+   323 2EA8 FF FF FF FF FF FF + 		.he FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+   324 2EB8 FF FF FF FF FF FF + 		.he FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+   325 2EC8 FF FF FF FF FF FF + 		.he FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+   326 2ED8 FF FF FF FF				.he FF FF FF FF
+   327 						
+   328 2EDC					org sprites1+$735+$18
+   329 2F4D-2FDB> FF FD FD FD + 		.he FF FD FD FD F5 FF E3 EC FD FF EE
+   330 2F58 FF EF FF FE DE DF + 		.he FF EF FF FE DE DF FF FF FF FF DF FF DF FF DF FF
+   331 2F68 FF FF FF FF DF FF + 		.he FF FF FF FF DF FF FF FF FF FF FF FE FE FF FF FF
+   332 2F78 FF FF FC F3 F7 FB + 		.he FF FF FC F3 F7 FB FB FF FF FF FF FF FF FF FF FF
+   333 2F88 FF FF FF FF FF FF + 		.he FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+   334 2F98 FF FF FF FF FF FF + 		.he FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+   335 2FA8 FF FF FF FF FF FF + 		.he FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+   336 2FB8 FF FF FF FF FF FF + 		.he FF FF FF FF FF FF FF FF FF FF FF FF FE FE FE FE
+   337 2FC8 FE FE FF FF FF FF + 		.he FE FE FF FF FF FF FF FF FE FE FE FE FE FE FE FF
+   338 2FD8 FF FF FF FF				.he FF FF FF FF  
+   339 						
+   340 2FDC					org $5000
+   341
+   342 5000			init2			
+   343 						//ntsc_colors	
+   344 5000-5079> A9 00 85 50			mva #0 pom0
+   345 5004 85 5E				sta ntsc
+   346 5006 AD 0B D4		@		lda vcount
+   347 5009 C5 50				cmp pom0
+   348 500B F0 F9				beq @-
+   349 500D 90 04				bcc @+
+   350 500F 85 50				sta pom0
+   351 5011 B0 F3				bcs @-
+   352 5013 A5 50		@		lda pom0
+   353 5015 C9 90				cmp #$90
+   354 5017 B0 2D				bcs @+
+   355 						
+   356 						
+   357 				//ntsc		
+   358 5019 E6 5E				inc ntsc
+   359 						
+   360 501B A9 44 8D C8 02			mva #$44 712	;tlo
+   361 5020 A9 00 8D C4 02			mva #$00 708
+   362 5025 A9 1E 8D C5 02			mva #$1E 709
+   363 502A A9 0C 8D C6 02			mva #$0C 710
+   364 						
+   365 502F A9 C8 8D C0 02			mva #$C8 704		;kolory duszkÃ³w
+   366 5034 A9 38 8D C1 02			mva #$38 705
+   367 5039 A9 08 8D C2 02			mva #$08 706
+   368 503E A9 06 8D C3 02			mva #$06 707
+   369 5043 4C 6E 50				jmp @+1
+   370 					
+   371
+   372 				//pal	
+   373 = 5046			@		equ *
+   374 5046 A9 32 8D C8 02			mva #$32 712	;tlo
+   375 504B A9 00 8D C4 02			mva #$00 708
+   376 5050 A9 EE 8D C5 02			mva #$EE 709
+   377 5055 A9 0C 8D C6 02			mva #$0C 710
+   378 						
+   379 505A A9 B8 8D C0 02			mva #$B8 704		;kolory duszkÃ³w
+   380 505F A9 18 8D C1 02			mva #$18 705
+   381 5064 A9 08 8D C2 02			mva #$08 706
+   382 5069 A9 06 8D C3 02			mva #$06 707
+   383 								
+   384 						
+   385 506E A5 14		@		lda 20
+   386 5070 E9 B4				sbc #180
+   387 5072 C5 14		@		cmp 20
+   388 5074 D0 FC				bne @-
+   389 5076 4C 76 50				jmp *
+   390 5079 60					rts
+   391 						
+   392 02E2-02E3> 00 50				ini init2
